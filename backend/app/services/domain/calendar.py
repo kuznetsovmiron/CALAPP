@@ -14,6 +14,7 @@ from app.schemas.external.google import GoogleEvent, GoogleEventDateTime, Google
 from google.oauth2.credentials import Credentials
 
 
+
 logger = logging.getLogger(__name__)
 
 class CalendarService:
