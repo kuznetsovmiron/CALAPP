@@ -29,16 +29,14 @@ async def registry_create_event(
 async def registry_list_events(
     user_id: UUID,
     time_expression: str,
-    duration_minutes: int,
-    limit: int = 10,    
-    time_range: Literal["past", "future", "all"] = "future",    
+    duration_minutes: Optional[int] = None,
+    limit: Optional[int] = None,    
 ) -> str:
     """Tool: list upcoming calendar events. Delegates logic to domain CalendarService."""
     command = EventListCommand(
         time_expression=time_expression,
         duration_minutes=duration_minutes,
-        limit=limit,
-        time_range=time_range,
+        limit=limit
     )
     events = await CalendarService.list_events(user_id, command)
     return "\n".join(

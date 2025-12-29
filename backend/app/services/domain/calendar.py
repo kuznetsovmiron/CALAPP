@@ -211,13 +211,11 @@ class CalendarService:
             )
             if not start_dt:
                 raise ValueError(f"Could not parse time expression: {time_expression}")
+
+            # Convert to UTC
             start_dt = start_dt.astimezone(timezone.utc)
-            
-            # Calculate end time and safety check
             end_dt = start_dt + timedelta(minutes=duration_minutes)
-            if start_dt < datetime.now(timezone.utc):
-                raise ValueError("Resolved time is in the past")
-            
+
             # Log and return start and end times
             print(f"Resolved event time: {start_dt} - {end_dt}")
             return start_dt, end_dt
