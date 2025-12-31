@@ -24,7 +24,7 @@ class ChatCompletionProvider:
             thread = proxy_client.beta.threads.create()
             return thread
         except Exception as e:
-            logger.exception(f"Failed to create thread: {e}")
+            logger.exception(f"LOGGER:Failed to create thread: {e}")
             raise
 
     @classmethod
@@ -67,7 +67,7 @@ class ChatCompletionProvider:
             )
 
         except Exception as e:
-            logger.exception(f"Failed to submit tool result to thread {thread_id} with tool call id {tool_call_id} and result {result}: {e}")
+            logger.exception(f"LOGGER:Failed to submit tool result to thread {thread_id} with tool call id {tool_call_id} and result {result}: {e}")
             raise
 
     @classmethod
@@ -112,7 +112,7 @@ class ChatCompletionProvider:
             else:
                 raise RuntimeError(f"Run failed with status: {run.status}")         
         except Exception as e:
-            logger.exception(f"Error while completing thread {thread_id} with content {content}: {e}")
+            logger.exception(f"LOGGER:Error while completing thread {thread_id} with content {content}: {e}")
             raise
 
     @classmethod
@@ -128,7 +128,7 @@ class ChatCompletionProvider:
                     )
                     logger.warning(f"Cancelled active run {run.id} in thread {thread_id}")
         except Exception as e:
-            logger.exception(f"Failed to cancel active runs in thread {thread_id}: {e}")
+            logger.exception(f"LOGGER:Failed to cancel active runs in thread {thread_id}: {e}")
             raise
 
     @classmethod
@@ -141,5 +141,5 @@ class ChatCompletionProvider:
                 role="user"
             )
         except Exception as e:
-            logger.exception(f"Failed to add message to thread {thread_id} with content {content}: {e}")
+            logger.exception(f"LOGGER:Failed to add message to thread {thread_id} with content {content}: {e}")
             raise

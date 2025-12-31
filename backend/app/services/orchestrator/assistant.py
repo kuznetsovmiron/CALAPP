@@ -23,7 +23,7 @@ class AssistantService:
             if output.tool_name:
                 # Executes tool
                 tool_call = ToolCall(name=output.tool_name, arguments=output.arguments or {})
-                print(f"Tool call: {tool_call.model_dump(mode='json', exclude_none=True)}")
+                logger.warning(f"LOGGER: Tool call: {tool_call.model_dump(mode='json', exclude_none=True)}")
                 # Dispatch tool call
                 result = await ToolDispatcher.dispatch(user_id, tool_call)
                 # Send tool result back to provider
@@ -38,7 +38,7 @@ class AssistantService:
             return output
 
         except Exception as e:
-            logger.exception(f"Assistant error for user {user_id}: {e}")
+            logger.exception(f"LOGGER:Assistant error for user {user_id}: {e}")
             return AssistantOutput(
                 text="Sorry, something went wrong while processing your request."
             )

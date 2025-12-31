@@ -22,7 +22,7 @@ class SessionService:
             session = await SessionRepository.create(session_orm)     
             return SessionDTO.model_validate(session)
         except Exception as e:
-            logger.exception(f"Failed to create session for data ={data}: {e}")
+            logger.exception(f"LOGGER:Failed to create session for data ={data}: {e}")
             raise InternalError("Failed to create session")
 
     @classmethod
@@ -36,5 +36,5 @@ class SessionService:
                 session = await cls.create(session_data)
             return SessionDTO.model_validate(session)
         except Exception as e:
-            logger.exception(f"Failed to get or create session for user_id={user_id}: {e}")
+            logger.exception(f"LOGGER:Failed to get or create session for user_id={user_id}: {e}")
             raise InternalError("Failed to get or create session")

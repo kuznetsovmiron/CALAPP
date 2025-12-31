@@ -31,10 +31,10 @@ class CalendarService:
                 prompt="consent",
                 state=str(user_id)
             )
-            print(url)
+            logger.info(f"LOGGER: Request token from Google: {url}")
             return url
         except Exception as e:
-            logger.exception(f"Failed to request token from Google: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to request token from Google: {e}", exc_info=e)
             raise InternalError("Failed to request token from Google")
 
     @classmethod
@@ -63,7 +63,7 @@ class CalendarService:
             )
             await TokenRepository.create(token_orm)
         except Exception as e:
-            logger.exception(f"Failed to store token in the database: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to store token in the database: {e}", exc_info=e)
             raise InternalError("Failed to store token in the database")
 
     @classmethod
@@ -84,7 +84,7 @@ class CalendarService:
             events = GoogleCalService.list_events(creds, command.limit, start_dt, end_dt, order_by="startTime")            
             return [await cls._google_to_api(e) for e in events]
         except Exception as e:
-            logger.exception(f"Failed to list events: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to list events: {e}", exc_info=e)
             raise InternalError("Failed to list events")
 
     @classmethod
@@ -113,7 +113,7 @@ class CalendarService:
             event = GoogleCalService.create_event(creds, google_event)
             return await cls._google_to_api(event)
         except Exception as e:
-            logger.exception(f"Failed to create event: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to create event: {e}", exc_info=e)
             raise InternalError("Failed to create event")
 
     @classmethod
@@ -127,7 +127,7 @@ class CalendarService:
             event = GoogleCalService.update_event(creds, event_id, command)
             return await cls._google_to_api(event)
         except Exception as e:
-            logger.exception(f"Failed to update event: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to update event: {e}", exc_info=e)
             raise InternalError("Failed to update event")
 
     @classmethod
@@ -141,7 +141,7 @@ class CalendarService:
             status = GoogleCalService.delete_event(creds, event_id)
             return status
         except Exception as e:
-            logger.exception(f"Failed to delete event: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to delete event: {e}", exc_info=e)
             raise InternalError("Failed to delete event")
 
     @staticmethod
@@ -165,7 +165,7 @@ class CalendarService:
                 attendees=[a.email for a in (event.attendees or [])],
             )
         except Exception as e:
-            logger.exception(f"Failed to convert Google event to API event: {e}")
+            logger.exception(f"LOGGER:Failed to convert Google event to API event: {e}")
             raise InternalError("Failed to convert Google event to API event")
 
     @classmethod
@@ -192,7 +192,7 @@ class CalendarService:
         except InternalError:
             raise
         except Exception as e:
-            logger.exception(f"Failed to get fresh credentials for user: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to get fresh credentials for user: {e}", exc_info=e)
             raise InternalError("Failed to get fresh credentials for user")
 
     @staticmethod
@@ -217,9 +217,8 @@ class CalendarService:
             end_dt = start_dt + timedelta(minutes=duration_minutes)
 
             # Log and return start and end times
-            print(f"Resolved event time: {start_dt} - {end_dt}")
+            logger.warning(f"LOGGER: Resolved event time: {start_dt} - {end_dt}")
             return start_dt, end_dt
         except Exception as e:
-            logger.exception(f"Failed to resolve event time: {e}", exc_info=e)
-            print(f"Failed to resolve event time: {e}")
+            logger.exception(f"LOGGER:Failed to resolve event time: {e}", exc_info=e)
             raise InternalError("Failed to resolve event time")

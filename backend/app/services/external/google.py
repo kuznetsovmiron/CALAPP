@@ -104,10 +104,10 @@ class GoogleCalService:
         try:
             service = cls._build_service(creds)
             event = service.events().insert(calendarId="primary", body=body.model_dump(mode="json", exclude_none=True)).execute()
-            print(f"Event created: {event.get('htmlLink')}")
+            logger.warning(f"LOGGER: Event created: {event.get('htmlLink')}")
             return GoogleEvent.model_validate(event)
         except Exception as e:
-            logger.error(f"Error creating event: {e}")
+            logger.error(f"LOGGER:Error creating event: {e}", exc_info=e)
             raise InternalError("Failed to create event")
 
     @classmethod

@@ -33,7 +33,7 @@ async def main():
             if output.text:
                 print(output.text)
             elif output.tool:
-                print(f"[tool:{output.tool}] {output.arguments}")
+                print(f"CHECK: [tool:{output.tool}] {output.arguments}")
             else:
                 print("[empty output]")
 
