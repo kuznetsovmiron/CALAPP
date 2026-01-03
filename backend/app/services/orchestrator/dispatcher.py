@@ -20,7 +20,7 @@ class ToolDispatcher:
             handler = TOOL_REGISTRY.get(tool_call.name)
             if not handler:
                 raise ToolExecutionError(f"Unknown tool: {tool_call.name}")            
-            logger.warning(f"LOGGER: Executing tool: {tool_call.name} for user {user_id}")
+            logger.warning(f"\nLOGGER: Executing tool: {tool_call.name} for user {user_id}")
             return await handler(user_id=user_id, **tool_call.arguments)
         except ToolExecutionError:
             raise

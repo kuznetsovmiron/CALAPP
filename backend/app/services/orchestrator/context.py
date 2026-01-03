@@ -10,10 +10,9 @@ def build_runtime_context(user_id: UUID) -> str:
 Runtime context:
 - Today is {now.date().isoformat()}
 - Current time is {now.time().isoformat(timespec="minutes")} UTC
-- Timezone: UTC
+- User timezone: Europe/Moscow
 
 Rules:
 - Resolve relative dates (today, tomorrow, next week) based on the date above.
-- Always convert dates to absolute ISO 8601 datetimes.
-- Use UTC unless the user explicitly specifies another timezone.
+- Use user timezone unless the user explicitly specifies another timezone.
 """.strip()

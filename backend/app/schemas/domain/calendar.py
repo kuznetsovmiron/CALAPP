@@ -49,8 +49,13 @@ class EventCreateCommand(BaseModel):
 class EventUpdateCommand(BaseModel):
     """Command for updating a calendar event."""
     title: Optional[str] = None
+    time_expression: Optional[str] = None
+    duration_minutes: Optional[int] = Field(default=None, ge=1)
     description: Optional[str] = None
-    start_dt: Optional[datetime] = None
-    end_dt: Optional[datetime] = None
     location: Optional[str] = None
     attendees: Optional[List[str]] = None
+
+    @field_validator("duration_minutes", mode="before")
+    @classmethod
+    def normalize_duration(cls, v):
+        return v  # keep None, let service decide

@@ -217,7 +217,7 @@ class CalendarService:
             end_dt = start_dt + timedelta(minutes=duration_minutes)
 
             # Log and return start and end times
-            logger.warning(f"LOGGER: Resolved event time: {start_dt} - {end_dt}")
+            logger.warning(f"\nLOGGER: Resolved event time: {start_dt} - {end_dt}")
             return start_dt, end_dt
         except Exception as e:
             logger.exception(f"LOGGER:Failed to resolve event time: {e}", exc_info=e)

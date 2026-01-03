@@ -16,17 +16,28 @@ class AssistantService:
     async def handle_user_message(cls, user_id: UUID, message: str, thread_id: str, context: str | None = None) -> AssistantOutput:
         """Handles a message from the user."""
         try:
-            # Get structured output directly from provider
+            # Start assistant run
             output = await ChatCompletionProvider.complete(thread_id, message, context)
-            
-            # Execute tool if requested
-            if output.tool_name:
-                # Executes tool
-                tool_call = ToolCall(name=output.tool_name, arguments=output.arguments or {})
-                logger.warning(f"LOGGER: Tool call: {tool_call.model_dump(mode='json', exclude_none=True)}")
-                # Dispatch tool call
+            max_tool_steps = 5
+            steps = 0            
+
+            # Handle tool calls iteratively (multi-step tool reasoning)
+            while output.tool_name:
+                # Safety check infinite loop
+                steps += 1
+                if steps > max_tool_steps:
+                    logger.warning(f"\nLOGGER:Max tool steps reached: {steps}")
+                    raise RuntimeError("Max tool steps reached")
+
+                # Create tool call and execute it
+                tool_call = ToolCall(
+                    name=output.tool_name,
+                    arguments=output.arguments or {}
+                )
+                logger.warning(f"\nLOGGER:Tool call: {tool_call.model_dump(mode='json', exclude_none=True)}")
                 result = await ToolDispatcher.dispatch(user_id, tool_call)
-                # Send tool result back to provider
+
+                # Submit tool result back to provider and continue the run
                 output = await ChatCompletionProvider.submit_tool_result(
                     thread_id=thread_id,
                     tool_call_id=output.tool_call_id,
@@ -34,7 +45,7 @@ class AssistantService:
                     result=result,
                 )
 
-            # Return assistant output
+            # Final assistant response (no more tool calls)
             return output
 
         except Exception as e:
