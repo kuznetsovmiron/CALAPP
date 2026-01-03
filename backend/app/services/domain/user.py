@@ -24,7 +24,7 @@ class UserService:
                 return []
             return users
         except Exception as e:
-            logger.exception(f"LOGGER:Failed to list users: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to list users")
             raise InternalError("Failed to list users")
 
     @classmethod
@@ -38,7 +38,7 @@ class UserService:
         except NotFoundError:
             raise
         except Exception as e:
-            logger.exception(f"LOGGER:Failed to retrieve user with user_id={user_id}: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to retrieve user with user_id={user_id}")
             raise InternalError("Failed to retrieve user")
 
     @classmethod
@@ -56,7 +56,7 @@ class UserService:
         except ForbiddenError:
             raise
         except Exception as e:
-            logger.exception(f"LOGGER:Failed to retrieve user by email={email}: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to retrieve user by email={email}")
             raise InternalError("Failed to retrieve user")
 
     @classmethod
@@ -66,7 +66,7 @@ class UserService:
             user_orm = UserOrm(**data.model_dump())
             return await UserRepository.create(user_orm)    
         except Exception as e:
-            logger.exception(f"LOGGER:Failed to create user with data={data}: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to create user with data={data}")
             raise InternalError("Failed to create user")           
 
     @classmethod
@@ -83,7 +83,7 @@ class UserService:
         except NotFoundError:
             raise
         except Exception as e:
-            logger.exception(f"LOGGER:Failed to update user user_id={user_id}, data={data}: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to update user user_id={user_id}, data={data}")
             raise InternalError("Failed to update user")
 
     @classmethod
@@ -97,5 +97,5 @@ class UserService:
         except NotFoundError:
             raise
         except Exception as e:
-            logger.exception(f"LOGGER:Failed to update user password for user_id={user_id}, data={data}: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to update user password for user_id={user_id}, data={data}")
             raise InternalError("Failed to update user password")

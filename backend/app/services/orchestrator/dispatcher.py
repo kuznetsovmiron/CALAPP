@@ -25,5 +25,5 @@ class ToolDispatcher:
         except ToolExecutionError:
             raise
         except Exception as e:
-            logger.exception(f"LOGGER:Failed to execute tool '{tool_call.name}' for user {user_id}: {e}", exc_info=e)
+            logger.exception(f"LOGGER:Failed to execute tool '{tool_call.name}' for user {user_id}")
             raise ToolExecutionError(f"Failed to execute tool '{tool_call.name}' for user {user_id}")

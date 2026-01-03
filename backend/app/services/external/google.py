@@ -107,7 +107,7 @@ class GoogleCalService:
             logger.warning(f"LOGGER: Event created: {event.get('htmlLink')}")
             return GoogleEvent.model_validate(event)
         except Exception as e:
-            logger.error(f"LOGGER:Error creating event: {e}", exc_info=e)
+            logger.error(f"LOGGER:Error creating event")
             raise InternalError("Failed to create event")
 
     @classmethod
