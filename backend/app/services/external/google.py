@@ -5,7 +5,7 @@ from googleapiclient.discovery import build
 from googleapiclient.discovery import Resource as GoogleResource
 from google.auth.transport.requests import Request
 from google.auth.exceptions import RefreshError
-from app.schemas.external.google import GoogleEvent, GoogleEventCreate
+from app.schemas.external.google import GoogleEvent
 from datetime import datetime, timezone
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
@@ -66,14 +66,7 @@ class GoogleEventService:
     """Google Event service class"""
 
     @classmethod
-    def list_events(
-        cls,
-        creds: Credentials,
-        limit: Optional[int] = 10,
-        start_dt: Optional[datetime] = None,
-        end_dt: Optional[datetime] = None,
-        order_by: Optional[Literal["startTime"]] = None,
-    ) -> List[GoogleEvent]:
+    def list_events(cls, creds: Credentials, limit: Optional[int] = 10, start_dt: Optional[datetime] = None, end_dt: Optional[datetime] = None, order_by: Optional[Literal["startTime"]] = None) -> List[GoogleEvent]:
         """List events"""
         try:
             service = cls._build_service(creds)
@@ -99,38 +92,46 @@ class GoogleEventService:
             raise InternalError("Failed to list events")        
 
     @classmethod
-    def create_event(cls, creds: Credentials, body: GoogleEventCreate) -> GoogleEvent:
-        """Create event"""
+    def create_event(cls, creds: Credentials, payload: dict) -> GoogleEvent:
+        """Create event from a dict payload"""
         try:
             service = cls._build_service(creds)
-            event = service.events().insert(calendarId="primary", body=body.model_dump(mode="json", exclude_none=True)).execute()
+            event = service.events().insert(
+                calendarId="primary",
+                body=payload
+            ).execute()
             logger.warning(f"LOGGER: Event created: {event.get('htmlLink')}")
             return GoogleEvent.model_validate(event)
-        except Exception as e:
-            logger.error(f"LOGGER:Error creating event")
-            raise InternalError("Failed to create event")
+        except Exception:
+            logger.exception("Failed to create event")
+            raise InternalError("Failed to create event")            
 
     @classmethod
-    def delete_event(cls, token: TokenOrm, event_id: str) -> bool:
-        """Delete event"""
+    def update_event(cls, creds: Credentials, event_id: str, payload: dict) -> GoogleEvent:
+        """Update event using dict payload"""
         try:
-            service = cls._build_service(token)
+            service = cls._build_service(creds)
+            event = service.events().update(
+                calendarId="primary",
+                eventId=event_id,
+                body=payload
+            ).execute()
+            return GoogleEvent.model_validate(event)
+        except Exception:
+            logger.exception("Failed to update event")
+            raise InternalError("Failed to update event")
+
+    @classmethod
+    def delete_event(cls, creds: Credentials, event_id: str) -> bool:
+        """Delete event by event ID"""
+        try:
+            service = cls._build_service(creds)
             service.events().delete(calendarId="primary", eventId=event_id).execute()
             return True
-        except Exception as e:
-            logger.error(f"Error deleting event: {e}")
+        except Exception:
+            logger.exception("Failed to delete event")
             raise InternalError("Failed to delete event")
 
-    @classmethod
-    def update_event(cls, token: TokenOrm, event_id: str, event: Dict) -> Dict:
-        """Update event"""
-        try:
-            service = cls._build_service(token)
-            event = service.events().update(calendarId="primary", eventId=event_id, body=event).execute()
-            return event
-        except Exception as e:
-            logger.error(f"Error updating event: {e}")
-            raise InternalError("Failed to update event")
 
     @classmethod
     def _build_service(cls, creds: Credentials) -> GoogleResource:

@@ -2,7 +2,7 @@ import logging
 from uuid import UUID
 
 from app.services.external.openai import ChatCompletionProvider
-from app.services.orchestrator.dispatcher import ToolDispatcher
+from app.services.orchestrator.tools import ToolDispatcher
 from app.schemas.orchestrator.assistant import AssistantOutput
 from app.schemas.orchestrator.tool import ToolCall
 
