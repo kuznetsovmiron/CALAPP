@@ -4,67 +4,19 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from typing import List
 from zoneinfo import ZoneInfo
-
-from app.orm.token import TokenOrm
-from app.repository.token import TokenRepository
-from app.schemas.domain.token import TokenProviderEnum
-from app.services.system.exceptions import InternalError
-from app.services.external.google import GoogleCalService, GoogleAuthService
-from app.schemas.domain.calendar import EventCreateCommand, EventDTO, EventListCommand, EventUpdateCommand
-from app.schemas.external.google import GoogleEvent, GoogleEventDateTime, GoogleEventAttendee, GoogleEventCreate
 from google.oauth2.credentials import Credentials
+
+from app.repository.token import TokenRepository
+from app.services.system.exceptions import InternalError
+from app.services.external.google import GoogleEventService, GoogleAuthService
+from app.schemas.domain.event import EventCreateCommand, EventDTO, EventListCommand, EventUpdateCommand
+from app.schemas.external.google import GoogleEvent, GoogleEventDateTime, GoogleEventAttendee, GoogleEventCreate
 
 
 logger = logging.getLogger(__name__)
 
-class CalendarService:
-    """Service class for managing calendar operations."""
-
-    @classmethod
-    async def request_token(cls, user_id: UUID) -> str:
-        """Request a token from Google for the current user."""
-        try:
-            flow = GoogleAuthService.get_flow()
-            url, _ = flow.authorization_url(
-                access_type="offline",
-                include_granted_scopes="true",
-                prompt="consent",
-                state=str(user_id)
-            )
-            logger.info(f"LOGGER: Request token from Google: {url}")
-            return url
-        except Exception as e:
-            logger.exception(f"Failed to request token from Google")
-            raise InternalError("Failed to request token from Google")
-
-    @classmethod
-    async def fetch_token(cls, url: str, state: str):
-        """Fetch token from Google."""
-        try:
-            # Fetch token and user_id from Google
-            flow = GoogleAuthService.get_flow()
-            flow.fetch_token(authorization_response=str(url))
-            creds = flow.credentials     
-            # Normalize Google creds expiry
-            creds_expiry = creds.expiry
-            if creds_expiry and creds_expiry.tzinfo is None:
-                creds_expiry = creds_expiry.replace(tzinfo=timezone.utc)            
-            # Fetch user_id from state
-            user_id = UUID(state)
-            if not user_id:
-                raise InternalError("User ID not found in state")
-            # Store token in the database
-            token_orm = TokenOrm(
-                user_id=user_id,
-                provider=TokenProviderEnum.google,
-                access_token=creds.token,
-                refresh_token=creds.refresh_token,
-                expiry=creds_expiry
-            )
-            await TokenRepository.create(token_orm)
-        except Exception as e:
-            logger.exception(f"Failed to store token in the database")
-            raise InternalError("Failed to store token in the database")
+class EventService:
+    """Service class for managing event operations."""
 
     @classmethod
     async def list_events(cls, user_id: UUID, command: EventListCommand) -> List[EventDTO]:
@@ -81,7 +33,7 @@ class CalendarService:
             )
             
             # List events and return results
-            events = GoogleCalService.list_events(creds, command.limit, start_dt, end_dt, order_by="startTime")            
+            events = GoogleEventService.list_events(creds, command.limit, start_dt, end_dt, order_by="startTime")            
             return [await cls._google_to_api(e) for e in events]
         except Exception as e:
             logger.exception(f"Failed to list events")
@@ -101,6 +53,7 @@ class CalendarService:
                 timezone_str="Europe/Moscow",
             )
             attendees = [GoogleEventAttendee(email=a) for a in command.attendees] if command.attendees else None
+            
             # Create Google event and return result
             google_event = GoogleEventCreate(
                 summary=command.title,
@@ -110,7 +63,7 @@ class CalendarService:
                 location=command.location,
                 attendees=attendees,
             )            
-            event = GoogleCalService.create_event(creds, google_event)
+            event = GoogleEventService.create_event(creds, google_event)
             return await cls._google_to_api(event)
         except Exception as e:
             logger.exception(f"Failed to create event")
@@ -120,14 +73,56 @@ class CalendarService:
     async def update_event(cls, user_id: UUID, event_id: str, command: EventUpdateCommand) -> EventDTO:
         """Update event for a user."""
         try:
-            # Fetch token from the database
+            # Fetch fresh credentials for the user
             creds = await cls._get_fresh_creds_for_user(user_id)
-            
-            # Update event
-            event = GoogleCalService.update_event(creds, event_id, command)
+
+            update_body: dict = {}
+
+            # Resolve time if provided
+            if command.time_expression:
+                start_dt, end_dt = await cls._resolve_event_time(
+                    time_expression=command.time_expression,
+                    duration_minutes=command.duration_minutes or 60,
+                    timezone_str="Europe/Moscow",
+                )
+                update_body["start"] = {
+                    "dateTime": start_dt.isoformat(),
+                    "timeZone": "UTC",
+                }
+                update_body["end"] = {
+                    "dateTime": end_dt.isoformat(),
+                    "timeZone": "UTC",
+                }
+
+            if command.title is not None:
+                update_body["summary"] = command.title
+
+            if command.description is not None:
+                update_body["description"] = command.description
+
+            if command.location is not None:
+                update_body["location"] = command.location
+
+            if command.attendees is not None:
+                update_body["attendees"] = [
+                    {"email": email} for email in command.attendees
+                ]
+
+            if not update_body:
+                raise InternalError("No fields to update")
+
+            event = GoogleEventService.update_event(
+                creds=creds,
+                event_id=event_id,
+                update_body=update_body,
+            )
+
             return await cls._google_to_api(event)
-        except Exception as e:
-            logger.exception(f"Failed to update event")
+
+        except InternalError:
+            raise
+        except Exception:
+            logger.exception("Failed to update event")
             raise InternalError("Failed to update event")
 
     @classmethod
@@ -138,7 +133,7 @@ class CalendarService:
             creds = await cls._get_fresh_creds_for_user(user_id)
             
             # Delete event
-            status = GoogleCalService.delete_event(creds, event_id)
+            status = GoogleEventService.delete_event(creds, event_id)
             return status
         except Exception as e:
             logger.exception(f"Failed to delete event")

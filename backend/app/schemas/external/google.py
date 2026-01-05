@@ -43,3 +43,17 @@ class GoogleEventCreate(BaseModel):
             datetime: lambda v: v.isoformat()
         }
     }
+
+class GoogleEventUpdate(BaseModel):
+    summary: Optional[str] = None
+    description: Optional[str] = None
+    start: Optional[GoogleEventDateTime] = None
+    end: Optional[GoogleEventDateTime] = None
+    location: Optional[str] = None
+    attendees: Optional[List[GoogleEventAttendee]] = None
+
+    model_config = {
+        "json_encoders": {
+            datetime: lambda v: v.isoformat()
+        }
+    }

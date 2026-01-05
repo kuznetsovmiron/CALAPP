@@ -62,8 +62,8 @@ class GoogleAuthService:
             logger.error(f"Error getting fresh credentials: {e}")
             raise InternalError(f"Failed to get fresh credentials: {e}")
 
-class GoogleCalService:
-    """Google Calendar service class"""
+class GoogleEventService:
+    """Google Event service class"""
 
     @classmethod
     def list_events(
