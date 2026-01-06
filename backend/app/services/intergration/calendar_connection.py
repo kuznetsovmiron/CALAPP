@@ -26,8 +26,8 @@ class CalendarConnectionService:
                 state=str(user_id)
             )
             return url
-        except Exception as e:
-            logger.exception(f"Failed to request token from Google")
+        except Exception:
+            logger.exception("Failed to request token from Google")
             raise InternalError("Failed to request token from Google")
 
     @classmethod
@@ -55,6 +55,6 @@ class CalendarConnectionService:
                 expiry=creds_expiry
             )
             await TokenRepository.create(token_orm)
-        except Exception as e:
+        except Exception:
             logger.exception(f"Failed to store token in the database")
             raise InternalError("Failed to store token in the database")

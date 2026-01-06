@@ -1,9 +1,7 @@
 import logging
-import parsedatetime
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import UUID
 from typing import List
-from zoneinfo import ZoneInfo
 from google.oauth2.credentials import Credentials
 
 from app.repository.token import TokenRepository
@@ -22,30 +20,27 @@ class EventService:
     async def list_events(cls, user_id: UUID, command: EventListCommand) -> List[EventDTO]:
         try:
             creds = await cls._get_fresh_creds_for_user(user_id)
-            start_dt, end_dt = await cls._resolve_event_time(
-                time_expression=command.time_expression,
-                duration_minutes=command.duration_minutes,
-                timezone_str="Europe/Moscow",
-            )
-            events = GoogleEventService.list_events(
-                creds, command.limit, start_dt, end_dt, order_by="startTime"
-            )
+            events = GoogleEventService.list_events(creds, command.limit, command.start_dt, command.end_dt, order_by="startTime")
             return [await cls._convert_to_dto(e) for e in events]
         except Exception:
             logger.exception("Failed to list events")
             raise InternalError("Failed to list events")
 
     @classmethod
-    async def create_event(cls, user_id: UUID, command: EventCreateCommand) -> EventDTO:
+    async def get_event(cls, user_id: UUID, event_id: str) -> EventDTO:
         try:
             creds = await cls._get_fresh_creds_for_user(user_id)
-            start_dt, end_dt = await cls._resolve_event_time(
-                time_expression=command.time_expression,
-                duration_minutes=command.duration_minutes or 60,
-                timezone_str="Europe/Moscow",
-            )
-            payload = cls._build_payload(command, start_dt, end_dt)
-            event = GoogleEventService.create_event(creds, payload)
+            event = GoogleEventService.get_event(creds, event_id)
+            return await cls._convert_to_dto(event)
+        except Exception:
+            logger.exception("Failed to get event")
+            raise InternalError("Failed to get event")
+
+    @classmethod
+    async def create_event(cls, user_id: UUID, command: EventCreateCommand) -> EventDTO:
+        try:
+            creds = await cls._get_fresh_creds_for_user(user_id)    
+            event = GoogleEventService.create_event(creds, command.model_dump(exclude_none=True))
             return await cls._convert_to_dto(event)
         except Exception:
             logger.exception("Failed to create event")
@@ -55,17 +50,7 @@ class EventService:
     async def update_event(cls, user_id: UUID, event_id: str, command: EventUpdateCommand) -> EventDTO:
         try:
             creds = await cls._get_fresh_creds_for_user(user_id)
-            start_dt = end_dt = None
-            if command.time_expression:
-                start_dt, end_dt = await cls._resolve_event_time(
-                    time_expression=command.time_expression,
-                    duration_minutes=command.duration_minutes or 60,
-                    timezone_str="Europe/Moscow",
-                )
-            payload = cls._build_payload(command, start_dt, end_dt)
-            if not payload:
-                raise InternalError("No fields to update")
-            event = GoogleEventService.update_event(creds, event_id, payload)
+            event = GoogleEventService.update_event(creds, event_id, command.model_dump(exclude_none=True))
             return await cls._convert_to_dto(event)
         except InternalError:
             raise
@@ -81,24 +66,6 @@ class EventService:
         except Exception:
             logger.exception("Failed to delete event")
             raise InternalError("Failed to delete event")
-
-    @staticmethod
-    def _build_payload(command: EventCreateCommand | EventUpdateCommand, start_dt: datetime | None = None, end_dt: datetime | None = None) -> dict:
-        payload = {}
-        if getattr(command, "title", None) is not None:
-            payload["summary"] = command.title
-        if getattr(command, "description", None) is not None:
-            payload["description"] = command.description
-        if getattr(command, "location", None) is not None:
-            payload["location"] = command.location
-        if getattr(command, "attendees", None) is not None:
-            payload["attendees"] = [{"email": a} for a in command.attendees]
-
-        if start_dt and end_dt:
-            payload["start"] = {"dateTime": start_dt.isoformat(), "timeZone": "UTC"}
-            payload["end"] = {"dateTime": end_dt.isoformat(), "timeZone": "UTC"}
-
-        return payload
 
     @staticmethod
     async def _convert_to_dto(event: GoogleEvent) -> EventDTO:
@@ -128,8 +95,6 @@ class EventService:
             if not token:
                 raise InternalError("Token not found")
             creds = GoogleAuthService.get_fresh_creds(token)
-            if creds.expiry and creds.expiry.tzinfo is None:
-                creds.expiry = creds.expiry.replace(tzinfo=timezone.utc)
             if creds.token != token.access_token or creds.expiry != token.expiry:
                 token.access_token = creds.token
                 token.expiry = creds.expiry
@@ -140,22 +105,3 @@ class EventService:
         except Exception:
             logger.exception("Failed to get fresh credentials for user")
             raise InternalError("Failed to get fresh credentials for user")
-
-    @staticmethod
-    async def _resolve_event_time(time_expression: str, timezone_str: str, duration_minutes: int) -> tuple[datetime, datetime]:
-        try:
-            cal = parsedatetime.Calendar()
-            time_struct, parse_status = cal.parse(time_expression)
-            if parse_status == 0:
-                raise ValueError(f"Could not parse time expression: {time_expression}")
-            start_dt = datetime(*time_struct[:6])
-            tz = ZoneInfo(timezone_str)
-            start_dt = start_dt.replace(tzinfo=tz).astimezone(timezone.utc)
-            end_dt = start_dt + timedelta(minutes=duration_minutes)
-            logger.warning(f"\nLOGGER: Resolved event time: {start_dt} - {end_dt}")
-            return start_dt, end_dt
-        except ValueError:
-            raise
-        except Exception:
-            logger.error("Failed to resolve event time")
-            raise InternalError(f"Failed to resolve event time for expression: {time_expression}")

@@ -27,6 +27,6 @@ class AuthService:
             raise
         except NotFoundError:
             raise
-        except Exception as e:
+        except Exception:
             logger.exception(f"LOGGER:Failed to login user with email={data.email}")
             raise InternalError("Failed to login")

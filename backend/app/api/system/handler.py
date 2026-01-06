@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Request, status, HTTPException, Depends, Query
-from fastapi.responses import RedirectResponse
 from uuid import UUID
 
-from app.services.domain.event import EventService
+from app.services.intergration.calendar_connection import CalendarConnectionService
 from app.services.system.exceptions import InternalError
 from app.core.security import get_user_id
 
@@ -12,7 +11,7 @@ router = APIRouter()
 async def request_token(user_id: UUID = Depends(get_user_id)):
     """Request token from Google."""
     try:
-        url = await EventService.request_token(user_id)
+        url = await CalendarConnectionService.request_token(user_id)
         # return RedirectResponse(url)
         return {"url": url}
     except InternalError as e:
@@ -23,7 +22,7 @@ async def request_token(user_id: UUID = Depends(get_user_id)):
 async def fetch_token(request: Request, state: str = Query(...)): # type: ignore
     """Fetch token from Google."""
     try:
-        await EventService.fetch_token(request.url, state) 
+        await CalendarConnectionService.fetch_token(request.url, state) 
         return {"status": "success"}
     except InternalError as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))    

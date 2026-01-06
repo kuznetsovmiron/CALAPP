@@ -26,7 +26,7 @@ class AssistantService:
                 # Safety check infinite loop
                 steps += 1
                 if steps > max_tool_steps:
-                    logger.warning(f"\nLOGGER:Max tool steps reached: {steps}")
+                    logger.warning(f" Max tool steps reached: {steps}")
                     raise RuntimeError("Max tool steps reached")
 
                 # Create tool call and execute it
@@ -34,7 +34,7 @@ class AssistantService:
                     name=output.tool_name,
                     arguments=output.arguments or {}
                 )
-                logger.warning(f"\nLOGGER:Tool call: {tool_call.model_dump(mode='json', exclude_none=True)}")
+                logger.warning(f" Tool call: {tool_call.model_dump(mode='json', exclude_none=True)}")
                 result = await ToolDispatcher.dispatch(user_id, tool_call)
 
                 # Submit tool result back to provider and continue the run
@@ -48,8 +48,8 @@ class AssistantService:
             # Final assistant response (no more tool calls)
             return output
 
-        except Exception as e:
-            logger.exception(f"LOGGER:Assistant error for user {user_id}: {e}")
+        except Exception:
+            logger.exception(f"LOGGER:Assistant error for user {user_id}")
             return AssistantOutput(
                 text="Sorry, something went wrong while processing your request."
             )

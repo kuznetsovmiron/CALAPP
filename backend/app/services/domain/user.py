@@ -23,7 +23,7 @@ class UserService:
             if not users:
                 return []
             return users
-        except Exception as e:
+        except Exception:
             logger.exception(f"LOGGER:Failed to list users")
             raise InternalError("Failed to list users")
 
@@ -37,7 +37,7 @@ class UserService:
             return user
         except NotFoundError:
             raise
-        except Exception as e:
+        except Exception:
             logger.exception(f"LOGGER:Failed to retrieve user with user_id={user_id}")
             raise InternalError("Failed to retrieve user")
 
@@ -55,7 +55,7 @@ class UserService:
             raise
         except ForbiddenError:
             raise
-        except Exception as e:
+        except Exception:
             logger.exception(f"LOGGER:Failed to retrieve user by email={email}")
             raise InternalError("Failed to retrieve user")
 
@@ -65,7 +65,7 @@ class UserService:
         try:             
             user_orm = UserOrm(**data.model_dump())
             return await UserRepository.create(user_orm)    
-        except Exception as e:
+        except Exception:
             logger.exception(f"LOGGER:Failed to create user with data={data}")
             raise InternalError("Failed to create user")           
 
@@ -82,7 +82,7 @@ class UserService:
             return await UserRepository.update(user)
         except NotFoundError:
             raise
-        except Exception as e:
+        except Exception:
             logger.exception(f"LOGGER:Failed to update user user_id={user_id}, data={data}")
             raise InternalError("Failed to update user")
 
@@ -96,6 +96,6 @@ class UserService:
             return await UserRepository.update(user)
         except NotFoundError:
             raise
-        except Exception as e:
+        except Exception:
             logger.exception(f"LOGGER:Failed to update user password for user_id={user_id}, data={data}")
             raise InternalError("Failed to update user password")

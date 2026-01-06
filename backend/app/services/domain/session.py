@@ -21,8 +21,8 @@ class SessionService:
             session_orm = SessionOrm(**data.model_dump())
             session = await SessionRepository.create(session_orm)     
             return SessionDTO.model_validate(session)
-        except Exception as e:
-            logger.exception(f"LOGGER:Failed to create session for data ={data}: {e}")
+        except Exception:
+            logger.exception(f"LOGGER:Failed to create session for data ={data}")
             raise InternalError("Failed to create session")
 
     @classmethod
@@ -35,6 +35,8 @@ class SessionService:
                 session_data = SessionCreateDTO(user_id=user_id, provider_thread_id=ai_thread.id)
                 session = await cls.create(session_data)
             return SessionDTO.model_validate(session)
-        except Exception as e:
-            logger.exception(f"LOGGER:Failed to get or create session for user_id={user_id}: {e}")
+        except InternalError:
+            raise
+        except Exception:
+            logger.exception(f"LOGGER:Failed to get or create session for user_id={user_id}")
             raise InternalError("Failed to get or create session")

@@ -23,7 +23,7 @@ class ProfileService:
             return await cls._to_extended_dto(user)
         except NotFoundError:
             raise        
-        except Exception as e:
+        except Exception:
             logger.exception(f"LOGGER:Failed to retrieve profile for user_id={user_id}")
             raise InternalError("Failed to retrieve profile")
     
@@ -37,7 +37,7 @@ class ProfileService:
             return await cls._to_extended_dto(user)
         except NotFoundError:
             raise        
-        except Exception as e:
+        except Exception:
             logger.exception(f"LOGGER:Failed to update profile for user_id={user_id}, data={data}")
             raise InternalError("Failed to update profile")
 
@@ -54,7 +54,7 @@ class ProfileService:
             raise
         except NotFoundError:
             raise
-        except Exception as e:
+        except Exception:
             logger.exception(f"LOGGER:Failed to update password for user_id={user_id}")
             raise InternalError("Failed to update password")
 
